@@ -15,7 +15,7 @@ func main() {
 
 ctx = context.Background()
 client, err = mongo.Connect(ctx,
-options.Client().ApplyURI(DB_URL))
+options.Client().ApplyURI("mongodb://admin:password@localhost:27017/admin?authSource=admin"))
 if err = client.Ping(context.TODO(),
 readpref.Primary()); err != nil {
 log.Fatal(err)
