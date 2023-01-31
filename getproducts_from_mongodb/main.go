@@ -17,7 +17,6 @@ var client *mongo.Client
 
 
 type Product struct{
-	ID string `json:"id"`
 	Name string `json:"name"`
 	Price int `json:"price"`
 	Image string `json:"image"`

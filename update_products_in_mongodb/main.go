@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -35,16 +37,24 @@ func init() {
 
 	}
 
-	func postProducts(c *gin.Context) {
+	func updateProductHandler(c *gin.Context) {
+		id :=c.Param("id")
 		var product  Product
 		if err := c.ShouldBindJSON(&product); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error":
 			err.Error()})
 			return
 			}
+			objectId, _ := primitive.ObjectIDFromHex(id)
 		collection := client.Database((
 	"MONGO_DATABASE")).Collection("products")
-			_, err = collection.InsertOne(ctx, product)
+	_, err = collection.UpdateOne(ctx, bson.M{
+		"_id": objectId,
+		}, bson.D{{Key: "$set", Value: bson.D{
+		{Key: "name", Value: product.Name},
+		{Key: "price", Value: product.Price},
+		{Key: "image", Value: product.Image},
+		}}})
 			if err != nil {
 			fmt.Println(err)
 			c.JSON(http.StatusInternalServerError,
@@ -52,10 +62,10 @@ func init() {
 			return
 			}
 
-		c.JSON(http.StatusOK, product)
+			c.JSON(http.StatusOK, gin.H{"message": "product has been updated"})
 	 }
 
 	func main() {
 		router := gin.Default()
-		router.POST("/products", postProducts)
+		router.PUT("/products/:id", updateProductHandler)
 		router.Run()}
