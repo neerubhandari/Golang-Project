@@ -50,6 +50,7 @@ func (handler *ProductsHandler) ListRecipesHandler(c *gin.
 			err.Error()})
 			return
 			}
+			product.ID = primitive.NewObjectID()
 			_, err := handler.collection.InsertOne(handler.ctx, product)
 			if err != nil {
 			fmt.Println(err)
