@@ -80,7 +80,7 @@ func (handler *ProductsHandler) ListRecipesHandler(c *gin.
 			gin.H{"error": "Error while inserting a new products"})
 			return
 			}
-
+       handler.redisClient.Del("products")
 		c.JSON(http.StatusOK, product)
 	 }
 
@@ -107,6 +107,6 @@ func (handler *ProductsHandler) ListRecipesHandler(c *gin.
 			gin.H{"error": "Error while inserting a new products"})
 			return
 			}
-
+			handler.redisClient.Del("products")
 			c.JSON(http.StatusOK, gin.H{"message": "product has been updated"})
 	 }
