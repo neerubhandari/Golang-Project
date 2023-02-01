@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"ecomm-back/models"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,18 +17,23 @@ import (
 type ProductsHandler struct {
 collection *mongo.Collection
 ctx        context.Context
+redisClient *redis.Client
 }
 
 func NewRecipesHandler(ctx context.Context, collection *mongo.
-Collection) *ProductsHandler {
+Collection,redisClient *redis.Client) *ProductsHandler {
 return &ProductsHandler{
 collection: collection,
 ctx: ctx,
+redisClient: redisClient,
 }
 }
 
 func (handler *ProductsHandler) ListRecipesHandler(c *gin.
 	Context) {
+		val, err := handler.redisClient.Get("products").Result()
+		if err == redis.Nil {
+			log.Printf("Request to MongoDB")
 	cur, err := handler.collection.Find(handler.ctx, bson.M{})
 	if err != nil {
 	c.JSON(http.StatusInternalServerError,
@@ -39,7 +47,21 @@ func (handler *ProductsHandler) ListRecipesHandler(c *gin.
 	cur.Decode(&product)
 	products = append(products, product)
 	}
+	data, _ := json.Marshal(products)
+	handler.redisClient.Set("products", string(data), 0)
+
 	c.JSON(http.StatusOK, products)
+	} else if err != nil {
+	c.JSON(http.StatusInternalServerError,
+	gin.H{"error": err.Error()})
+	return
+	} else {
+	log.Printf("Request to Redis")
+	products := make([]models.Product, 0)
+	json.Unmarshal([]byte(val), &products)
+	c.JSON(http.StatusOK, products)
+	}
+	
 	}
 
 

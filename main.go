@@ -35,9 +35,11 @@ package main
 import (
 	"context"
 	handlers "ecomm-back/handlers"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -54,8 +56,16 @@ readpref.Primary()); err != nil {log.Fatal(err)
 log.Println("Connected to MongoDB")
 collection := client.Database(
 "MONGO_DATABASE").Collection("products")
-productsHandler = handlers.NewRecipesHandler(ctx,
-collection)
+
+redisClient := redis.NewClient(&redis.Options{
+   Addr:     "localhost:6379",
+   Password: "",
+   DB: 0,
+   })
+   status := redisClient.Ping()
+   fmt.Println(status)
+   productsHandler = handlers.NewRecipesHandler(ctx,
+      collection,redisClient)
 }
 
 func main() {
