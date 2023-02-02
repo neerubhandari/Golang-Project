@@ -45,35 +45,41 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-   var productsHandler *handlers.ProductsHandler
-func init() {
-ctx := context.Background()
-client, err := mongo.Connect(ctx,
-options.Client().ApplyURI("mongodb://admin:password@localhost:27017/admin?authSource=admin"))
-if err = client.Ping(context.TODO(),
-readpref.Primary()); err != nil {log.Fatal(err)
-}
-log.Println("Connected to MongoDB")
-collection := client.Database(
-"MONGO_DATABASE").Collection("products")
+var productsHandler *handlers.ProductsHandler
 
-redisClient := redis.NewClient(&redis.Options{
-   Addr:     "localhost:6379",
-   Password: "",
-   DB: 0,
-   })
-   status := redisClient.Ping()
-   fmt.Println(status)
-   productsHandler = handlers.NewRecipesHandler(ctx,
-      collection,redisClient)
+func init() {
+	ctx := context.Background()
+	client, err := mongo.Connect(ctx,
+		options.Client().ApplyURI("mongodb://admin:password@localhost:27017/admin?authSource=admin"))
+	if err = client.Ping(context.TODO(),
+		readpref.Primary()); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Connected to MongoDB")
+	collection := client.Database(
+		"MONGO_DATABASE").Collection("products")
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	status := redisClient.Ping()
+	fmt.Println(status)
+	productsHandler = handlers.NewRecipesHandler(ctx,
+		collection, redisClient)
 }
 
 func main() {
-   router := gin.Default()
-   router.POST("/products", productsHandler.PostProducts)
-   router.GET("/products",
-   productsHandler.ListRecipesHandler)
-   router.PUT("/products/:id",
-   productsHandler.UpdateProductHandler)
-   router.Run()
-   }
+	router := gin.Default()
+	authorized := router.Group("/")
+	authorized.Use(handlers.AuthMiddleware())
+	{
+		authorized.POST("/products", productsHandler.PostProducts)
+		authorized.GET("/products", productsHandler.ListRecipesHandler)
+		authorized.PUT("/products/:id", productsHandler.UpdateProductHandler)
+
+	}
+	router.Run()
+
+}
